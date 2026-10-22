@@ -2,6 +2,10 @@
 
 [English](README.md) | **Bahasa Indonesia**
 
+<img src="docs/menubar.png" alt="Hardware Monitor di menu bar macOS" width="164">
+
+*CPU, GPU, dan RAM di menu bar (mode gelap, CPU tepat di batas peringatan 80 °C).*
+
 Aplikasi menu bar macOS yang ringan untuk memantau suhu CPU, memori, dan GPU.
 
 Menu bar menampilkan CPU, GPU, dan RAM bertumpuk dalam satu kolom selebar ±55 pt

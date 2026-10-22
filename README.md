@@ -2,6 +2,10 @@
 
 **English** | [Bahasa Indonesia](README.id.md)
 
+<img src="docs/menubar.png" alt="Hardware Monitor in the macOS menu bar" width="164">
+
+*CPU, GPU, and RAM in the menu bar (dark mode, CPU at the 80 °C warning threshold).*
+
 A lightweight macOS menu bar app for monitoring CPU temperature, GPU temperature, and memory usage on Apple Silicon.
 
 The menu bar shows CPU, GPU, and RAM stacked in a single column about 55 pt wide
