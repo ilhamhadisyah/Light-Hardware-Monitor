@@ -86,3 +86,7 @@ Catatan:
 - Daftar key berbeda di tiap chip (M1/M2/M3/M4), jadi aplikasi mengelompokkan berdasarkan awalan key
   (`Tp`, `Te`, `Tg`), bukan memakai daftar key yang ditulis langsung di kode.
 - Rencana tampilan: rata-rata kelompok di menu bar, nilai maksimum di menu dropdown.
+
+## Lisensi
+
+[MIT](LICENSE) © 2026 Ilham Hadisyah R
