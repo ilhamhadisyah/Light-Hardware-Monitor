@@ -1,92 +1,106 @@
 # Hardware Monitor
 
-Aplikasi menu bar macOS yang ringan untuk memantau suhu CPU, memori, dan GPU.
+**English** | [Bahasa Indonesia](README.id.md)
 
-Menu bar menampilkan CPU, GPU, dan RAM bertumpuk dalam satu kolom selebar ±55 pt
-(font 9 pt; 8 pt di menu bar 24 pt). Angka berwarna oranye ≥ 80 °C, merah ≥ 95 °C,
-RAM ikut berwarna saat tekanan memori tinggi. Klik untuk rincian: suhu rata-rata/maks, pemakaian GPU,
-rincian memori, swap, interval refresh (1/2/5 detik). Geser posisinya dengan ⌘-drag.
+A lightweight macOS menu bar app for monitoring CPU temperature, GPU temperature, and memory usage on Apple Silicon.
 
-## Build & instal
+The menu bar shows CPU, GPU, and RAM stacked in a single column about 55 pt wide
+(9 pt font; 8 pt on a 24 pt menu bar). Temperatures turn orange at ≥ 80 °C and red at ≥ 95 °C,
+and RAM changes color when memory pressure is high. Click it for details: average/max temperatures, GPU usage,
+memory breakdown, swap, and refresh interval (1/2/5 seconds). Move it with ⌘-drag.
+
+> The app's menu text is currently in Indonesian.
+
+## Requirements
+
+- Mac with Apple Silicon (tested on M2)
+- macOS 14 or later
+- Swift 5.9+ (Xcode Command Line Tools are enough; full Xcode is not required)
+
+The app reads sensors through private APIs (AppleSMC and IOHIDEventSystem), so it is unsandboxed and
+cannot be distributed through the Mac App Store.
+
+## Build & install
 
 ```bash
-./scripts/install.sh    # build, ganti /Applications/Hardware Monitor.app, lalu jalankan
-./scripts/bundle.sh     # hanya build → build/Hardware Monitor.app
+./scripts/install.sh    # build, replace /Applications/Hardware Monitor.app, then launch
+./scripts/bundle.sh     # build only → build/Hardware Monitor.app
 ```
 
-Untuk berjalan otomatis setelah login, centang **Buka saat login** di menu aplikasi
-(memakai `SMAppService`; terlihat juga di Pengaturan Sistem → Umum → Login Items).
-Aktifkan dari salinan di `/Applications`, karena macOS mendaftarkan lokasi aplikasi yang sedang berjalan.
+To start automatically after login, check **Buka saat login** ("Open at login") in the app's menu
+(uses `SMAppService`; also visible under System Settings → General → Login Items).
+Enable it from the copy in `/Applications`, because macOS registers the location of the running app.
+The app is ad-hoc signed, so after reinstalling a new build you may need to toggle this option again.
 
-## Validasi sensor
+## Sensor validation
 
-Nilai suhu di luar 10–130 °C, atau lebih dari 25 °C di bawah median kelompoknya, dibuang;
-key tersebut memakai nilai valid terakhirnya. Setelah Mac bangun dari sleep, pembacaan ditunda 5 detik
-lalu semua key dibaca ulang. Nilai yang dibuang dicatat ke log:
+Temperature readings outside 10–130 °C, or more than 25 °C below the median of their group, are discarded;
+that key keeps its last valid value. After the Mac wakes from sleep, readings are paused for 5 seconds
+and then every key is read again. Discarded readings are logged:
 
 ```bash
 log show --last 1d --predicate 'subsystem == "local.HardwareMonitor"' --style compact
 ```
 
-## Probe sensor
+## Sensor probe
 
 ```bash
 swift build
-.build/debug/SensorProbe          # ringkasan semua pembaca + waktu baca
-.build/debug/SensorProbe --hid    # sensor suhu lewat IOHID
-.build/debug/SensorProbe --smc    # semua key suhu SMC (KEY<tab>°C)
-.build/debug/SensorProbe --bench  # waktu nyata vs waktu CPU per pembacaan suhu
-.build/debug/SensorProbe --watch 60  # pantau semua key CPU/GPU, laporkan nilai < 20 °C
+.build/debug/SensorProbe             # summary of all readers + read timings
+.build/debug/SensorProbe --hid       # temperature sensors via IOHID
+.build/debug/SensorProbe --smc       # all SMC temperature keys (KEY<tab>°C)
+.build/debug/SensorProbe --bench     # wall time vs CPU time per temperature read
+.build/debug/SensorProbe --watch 60  # watch all CPU/GPU keys, report values < 20 °C
 ```
 
-## Struktur
+## Project structure
 
-| Path | Isi |
+| Path | Contents |
 |---|---|
-| `Sources/CPrivate` | Deklarasi C untuk API privat (IOHID event, struct AppleSMC) |
+| `Sources/CPrivate` | C declarations for private APIs (IOHID events, AppleSMC structs) |
 | `Sources/Sensors` | `SMCReader`, `ThermalReader`, `MemoryReader`, `GPUReader`, `TemperatureReader` (IOHID) |
-| `Sources/HardwareMonitor` | Aplikasi menu bar (AppKit `NSStatusItem`) |
-| `Sources/SensorProbe` | CLI untuk menguji pembaca |
-| `Support/Info.plist` | `LSUIElement` (tanpa ikon Dock) |
+| `Sources/HardwareMonitor` | Menu bar app (AppKit `NSStatusItem`) |
+| `Sources/SensorProbe` | CLI for testing the readers |
+| `Support/Info.plist` | `LSUIElement` (no Dock icon) |
 
-## Footprint (release, M2, interval 2 detik)
+## Footprint (release build, M2, 2-second interval)
 
-| | Awal | Sekarang |
+| | Before | Now |
 |---|---|---|
-| Waktu CPU per pembacaan suhu | 0,87 ms (36 key) | 0,13 ms (9 key bergiliran) |
-| CPU rata-rata (diukur 120 detik) | ±0,2% | ±0,08% |
+| CPU time per temperature read | 0.87 ms (36 keys) | 0.13 ms (9 keys, round-robin) |
+| Average CPU (measured over 120 s) | ~0.2% | ~0.08% |
 | Memory footprint | 11 MB | 11 MB |
 
-Optimasi yang dipakai:
-- `ThermalReader` membaca ¼ key SMC per tick secara bergiliran (semua key segar tiap 4 tick).
-- `TitleView` menggambar judul langsung, menghindari Auto Layout yang dipicu `button.attributedTitle`.
-- Lebar item dikunci, judul hanya digambar ulang jika nilainya berubah, rincian menu hanya dihitung saat menu terbuka.
-- Timer berhenti saat layar mati; `malloc_zone_pressure_relief` setelah startup dan setelah menu ditutup.
+Optimizations:
+- `ThermalReader` reads ¼ of the SMC keys per tick in rotation (every key is refreshed every 4 ticks).
+- `TitleView` draws the title directly, avoiding the Auto Layout pass triggered by `button.attributedTitle`.
+- The item width is fixed, the title is only redrawn when a value changes, and menu details are only computed while the menu is open.
+- The timer stops while the display sleeps; `malloc_zone_pressure_relief` runs after startup and after the menu closes.
 
-Batas bawah RAM: aplikasi AppKit kosong yang hanya menampilkan satu status item sudah memakai ±9 MB.
+Memory floor: an empty AppKit app showing a single status item already uses about 9 MB.
 
-## Temuan Fase 0 (Apple M2, macOS 26.3)
+## Sensor findings (Apple M2, macOS 26.3)
 
-**IOHID** hanya mengekspos sensor die SoC (`PMU tdie1-8`, `PMU2 tdie1-8`), NAND, dan baterai.
-Tidak ada sensor berlabel CPU/GPU (`pACC`, `eACC`, `GPU MTR`), jadi suhu per komponen diambil dari **SMC**.
+**IOHID** only exposes SoC die sensors (`PMU tdie1-8`, `PMU2 tdie1-8`), NAND, and battery.
+There are no CPU/GPU-labeled sensors (`pACC`, `eACC`, `GPU MTR`), so per-component temperatures come from **SMC**.
 
-Uji beban CPU 15 detik (8× `yes`), rata-rata per kelompok key SMC:
+15-second CPU load test (8× `yes`), average per SMC key group:
 
-| Kelompok | Jumlah | Idle | Beban CPU | Kenaikan | Dipakai untuk |
+| Group | Count | Idle | CPU load | Increase | Used for |
 |---|---|---|---|---|---|
-| `Tp*` | 27 | 38.0 °C | 58.4 °C | +20.4 | **CPU** (P-core) |
-| `Te*` | 3 | 37.5 °C | 50.2 °C | +12.7 | CPU (E-core) |
+| `Tp*` | 27 | 38.0 °C | 58.4 °C | +20.4 | **CPU** (P-cores) |
+| `Te*` | 3 | 37.5 °C | 50.2 °C | +12.7 | CPU (E-cores) |
 | `Tg*` | 6 | 35.2 °C | 47.1 °C | +11.9 | **GPU** |
-| `Ts*`, `Th*` | 32 | ~33.5 °C | ~46.7 °C | ~+13 | sensor SoC lain (tidak dipakai) |
-| `TB*` | 3 | 29.8 °C | 29.8 °C | 0 | baterai |
+| `Ts*`, `Th*` | 32 | ~33.5 °C | ~46.7 °C | ~+13 | other SoC sensors (unused) |
+| `TB*` | 3 | 29.8 °C | 29.8 °C | 0 | battery |
 
-Catatan:
-- `Tg*` ikut naik saat beban CPU karena panas menyebar di satu die. Pemetaan GPU berdasarkan konvensi nama
-  dan belum diuji dengan beban GPU.
-- Daftar key berbeda di tiap chip (M1/M2/M3/M4), jadi aplikasi mengelompokkan berdasarkan awalan key
-  (`Tp`, `Te`, `Tg`), bukan memakai daftar key yang ditulis langsung di kode.
-- Rencana tampilan: rata-rata kelompok di menu bar, nilai maksimum di menu dropdown.
+Notes:
+- `Tg*` also rises under CPU load because heat spreads across the single die. The GPU mapping is based on
+  key naming conventions and has not been tested under GPU load.
+- Key lists differ per chip (M1/M2/M3/M4), so the app groups keys by prefix (`Tp`, `Te`, `Tg`)
+  instead of using a hard-coded key list.
+- The menu bar shows the group average; the menu shows the maximum.
 
-## Lisensi
+## License
 
 [MIT](LICENSE) © 2026 Ilham Hadisyah R
