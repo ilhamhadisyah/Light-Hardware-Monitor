@@ -6,6 +6,10 @@
 
 *CPU, GPU, dan RAM di menu bar (mode gelap, CPU tepat di batas peringatan 80 °C).*
 
+<img src="docs/menu.png" alt="Menu Hardware Monitor dengan rincian sensor" width="447">
+
+*Menu rincian: suhu rata-rata/maks, pemakaian GPU, rincian memori, interval refresh, dan buka saat login.*
+
 Aplikasi menu bar macOS yang ringan untuk memantau suhu CPU, memori, dan GPU.
 
 Menu bar menampilkan CPU, GPU, dan RAM bertumpuk dalam satu kolom selebar ±55 pt

@@ -6,6 +6,10 @@
 
 *CPU, GPU, and RAM in the menu bar (dark mode, CPU at the 80 °C warning threshold).*
 
+<img src="docs/menu.png" alt="Hardware Monitor menu with sensor details" width="447">
+
+*Details menu: average/max temperatures, GPU usage, memory breakdown, refresh interval, and open at login.*
+
 A lightweight macOS menu bar app for monitoring CPU temperature, GPU temperature, and memory usage on Apple Silicon.
 
 The menu bar shows CPU, GPU, and RAM stacked in a single column about 55 pt wide
